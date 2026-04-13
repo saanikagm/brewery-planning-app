@@ -67,7 +67,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [latestForecastDate] = useState("April 8, 2026");
+  const [latestForecastDate] = useState("April 13, 2026");
 
   const [showDemandContent, setShowDemandContent] = useState(false);
 
