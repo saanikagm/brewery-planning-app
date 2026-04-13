@@ -196,6 +196,36 @@ export default function Home() {
     return Object.values(grouped);
   }, [filteredRows]);
 
+  const totalDemand = chartData.reduce((sum, row) => sum + row.effective, 0);
+  const avgWeeklyDemand = chartData.length ? totalDemand / chartData.length : 0;
+
+  const overviewStats = {
+    demandPlan: {
+      total: totalDemand,
+      avg: avgWeeklyDemand,
+      vsLastYear: "+12%",
+      vsPriorYear: "+8%",
+    },
+    inventoryPlan: {
+      target: "4.4 WOH Avg",
+      range: "-0.2 - 10.0 WOH Range",
+      above: "6% Weeks Above Target",
+      below: "5% Weeks Below Target",
+    },
+    brewingPlan: {
+      total: "720 Total BBL",
+      avg: "45 Avg BBL per Week",
+      max: "90 BBL in Max Week",
+      batches: "24 Total Batches",
+    },
+    packagingPlan: {
+      total: "720 Total BBL",
+      cases: "259 Case BBL | 36% of Total",
+      half: "363 1/2 BBL | 50% of Total",
+      sixtel: "98 Sixtel BBL | 14% of Total",
+    },
+  };
+
   const [pendingEdit, setPendingEdit] = useState<{
     pivotRow: PivotRow;
     weekNumber: number;
@@ -300,6 +330,107 @@ export default function Home() {
       <div style={placeholderCardStyle}>
         <h2 style={{ marginTop: 0, marginBottom: "8px" }}>{title}</h2>
         <p style={{ color: "#6b7280", margin: 0 }}>This section is not built yet.</p>
+      </div>
+    );
+  }
+
+  function renderOverviewTab() {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={chartCardStyle}>
+          <h2 style={{ margin: 0, fontSize: "28px", fontWeight: 700 }}>Overview</h2>
+          <p style={{ marginTop: "8px", marginBottom: 0, color: "#6b7280" }}>
+            Snapshot of the current demand forecast and effective demand plan.
+          </p>
+        </div>
+  
+        <div style={overviewGridStyle}>
+          <div style={overviewLeftColumnStyle}>
+            {renderMetricCard("Demand Plan", [
+              `${formatNumber(overviewStats.demandPlan.total)} Total BBL`,
+              `${formatNumber(overviewStats.demandPlan.avg)} BBL Weekly Avg`,
+              `${overviewStats.demandPlan.vsLastYear} from last year`,
+              `${overviewStats.demandPlan.vsPriorYear} from prior year`,
+            ], [2, 3])}
+  
+            {renderMetricCard("Inventory Plan", [
+              overviewStats.inventoryPlan.target,
+              overviewStats.inventoryPlan.range,
+              overviewStats.inventoryPlan.above,
+              overviewStats.inventoryPlan.below,
+            ])}
+  
+            {renderMetricCard("Brewing Plan", [
+              overviewStats.brewingPlan.total,
+              overviewStats.brewingPlan.avg,
+              overviewStats.brewingPlan.max,
+              overviewStats.brewingPlan.batches,
+            ])}
+  
+            {renderMetricCard("Packaging Plan", [
+              overviewStats.packagingPlan.total,
+              overviewStats.packagingPlan.cases,
+              overviewStats.packagingPlan.half,
+              overviewStats.packagingPlan.sixtel,
+            ])}
+          </div>
+  
+          <div style={overviewMainGridStyle}>
+            <div style={overviewPanelStyle}>
+              <div style={{ marginBottom: "12px" }}>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>
+                  Weekly Forecast Demand
+                </h3>
+                <p style={{ marginTop: "6px", marginBottom: 0, color: "#6b7280", fontSize: "13px" }}>
+                  Forecast versus effective plan across the 8-week horizon.
+                </p>
+              </div>
+
+              <div style={{ width: "100%", height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="forecast"
+                      name="Forecast"
+                      stroke="#94a3b8"
+                      strokeWidth={3}
+                      dot={{ r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="effective"
+                      name="Effective Plan"
+                      stroke="#2563eb"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {renderPlaceholderPanel(
+              "Brewing Plan",
+              "Placeholder area for brewing plan visuals and summary metrics."
+            )}
+
+            {renderPlaceholderPanel(
+              "Inventory WOH",
+              "Placeholder area for inventory WOH visuals, alerts, and summary metrics."
+            )}
+
+            {renderPlaceholderPanel(
+              "Packaging Plan",
+              "Placeholder area for packaging plan visuals and summary metrics."
+            )}
+          </div> 
+        </div>
       </div>
     );
   }
@@ -536,6 +667,75 @@ export default function Home() {
     );
   }
 
+  function renderMetricCard(
+    title: string,
+    lines: string[],
+    accentLines: number[] = []
+  ) {
+    return (
+      <div style={overviewMetricCardStyle}>
+        <h3
+          style={{
+            marginTop: 0,
+            marginBottom: "14px",
+            fontSize: "18px",
+            fontWeight: 700,
+            textAlign: "center",
+          }}
+        >
+          {title}
+        </h3>
+  
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {lines.map((line, index) => (
+            <p
+              key={index}
+              style={{
+                margin: 0,
+                textAlign: "center",
+                fontSize: index === 0 ? "15px" : "14px",
+                fontWeight: index === 0 ? 700 : 500,
+                color: accentLines.includes(index) ? "#15803d" : "#4b5563",
+              }}
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  function renderPlaceholderPanel(title: string, subtitle: string) {
+    return (
+      <div style={overviewPanelStyle}>
+        <div style={{ marginBottom: "12px" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>{title}</h3>
+          <p style={{ marginTop: "6px", marginBottom: 0, color: "#6b7280", fontSize: "13px" }}>
+            {subtitle}
+          </p>
+        </div>
+  
+        <div
+          style={{
+            height: "300px",
+            borderRadius: "14px",
+            border: "1px dashed #cbd5e1",
+            background: "#f8fafc",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#94a3b8",
+            fontSize: "14px",
+            fontWeight: 600,
+          }}
+        >
+          Placeholder content
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main
       style={{
@@ -600,7 +800,7 @@ export default function Home() {
 
         {!loading && !error && (
           <>
-            {activeTab === "Overview" && renderPlaceholderTab("Overview")}
+            {activeTab === "Overview" && renderOverviewTab()}
             {activeTab === "Demand Plan" && renderDemandPlanTab()}
             {activeTab === "Inventory" && renderPlaceholderTab("Inventory")}
             {activeTab === "Brewing Plan" && renderPlaceholderTab("Brewing Plan")}
@@ -771,6 +971,43 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid #d1d5db",
   fontSize: "13px",
   background: "white",
+};
+
+const overviewGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "260px minmax(0, 1fr)",
+  gap: "20px",
+  alignItems: "start",
+};
+
+const overviewLeftColumnStyle: React.CSSProperties = {
+  display: "grid",
+  gap: "16px",
+};
+
+const overviewMainGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: "20px",
+  alignItems: "start",
+};
+
+
+
+const overviewMetricCardStyle: React.CSSProperties = {
+  background: "white",
+  border: "1px solid #e5e7eb",
+  borderRadius: "20px",
+  padding: "24px 18px",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+};
+
+const overviewPanelStyle: React.CSSProperties = {
+  background: "white",
+  border: "1px solid #e5e7eb",
+  borderRadius: "20px",
+  padding: "20px 24px",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
 };
 
   
