@@ -61,14 +61,40 @@ function formatNumber(value: number | null | undefined) {
   return Number(value).toFixed(2).replace(/\.00$/, "");
 }
 
+function getNextMonday(fromDate = new Date()) {
+  const date = new Date(fromDate);
+  const day = date.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+
+  // If today is Monday, use today
+  if (day === 1) {
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  // Otherwise go to next Monday
+  const daysUntilNextMonday = day === 0 ? 1 : 8 - day;
+  date.setDate(date.getDate() + daysUntilNextMonday);
+  date.setHours(0, 0, 0, 0);
+
+  return date;
+}
+
+function formatWeekLabel(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabName>("Demand Plan");
   const [rows, setRows] = useState<DemandPlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [latestForecastDate] = useState("April 13, 2026");
-
+  const [latestForecastDate] = useState("Mon, Apr 13, 2026");
+  
   const [showDemandContent, setShowDemandContent] = useState(false);
 
   const [sessionId, setSessionId] = useState("558f862e-1c64-49c2-968e-6d9274b71088");
@@ -143,12 +169,22 @@ export default function Home() {
     });
   }, [rows, productFilter, channelFilter, packagingFilter]);
 
+  const weekLabels = useMemo(() => {
+    const startDate = getNextMonday();
+  
+    return Array.from({ length: 8 }, (_, index) => {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + index * 7);
+      return formatWeekLabel(date);
+    });
+  }, []);
+
   const chartData = useMemo(() => {
     const weekMap: Record<number, { week: string; forecast: number; effective: number }> = {};
 
     for (let week = 1; week <= 8; week++) {
       weekMap[week] = {
-        week: `Week${week}`,
+        week: weekLabels[week - 1],
         forecast: 0,
         effective: 0,
       };
@@ -162,7 +198,7 @@ export default function Home() {
     });
 
     return Object.values(weekMap);
-  }, [filteredRows]);
+  }, [filteredRows, weekLabels]);
 
   const pivotRows = useMemo(() => {
     const grouped: Record<string, PivotRow> = {};
@@ -517,14 +553,7 @@ export default function Home() {
                         "Brand",
                         "Channel",
                         "Packaging",
-                        "Week1",
-                        "Week2",
-                        "Week3",
-                        "Week4",
-                        "Week5",
-                        "Week6",
-                        "Week7",
-                        "Week8",
+                        ...weekLabels,
                       ].map((header) => (
                         <th
                           key={header}
